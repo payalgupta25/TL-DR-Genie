@@ -5,26 +5,34 @@ function App() {
   const [question, setQuestion] = useState('')
   const [answer, setAnswer] = useState('')
   const [loading, setLoading] = useState(false)
+  const [addHashtags, setAddHashtags] = useState(false)
+  const [addBullets, setAddBullets] = useState(false)
 
   async function generateTLDR() {
     if (!question.trim()) return
     setLoading(true)
     setAnswer('')
     try {
+      let prompt = `Give me a TLDR:\n${question}`
+      if (addBullets) prompt += '\nFormat it using bullet points.'
+      if (addHashtags) prompt += '\nAdd relevant hashtags at the end.'
+
       const res = await axios({
         method: 'POST',
         url: `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`,
         data: {
-          contents: [{
-            parts: [{ text: `Give me a TLDR:\n${question}` }]
-          }]
-        }
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+        },
       })
-      const text = res.data.candidates?.[0]?.content?.parts?.[0]?.text || "No summary found."
+      const text = res.data.candidates?.[0]?.content?.parts?.[0]?.text || 'No summary found.'
       setAnswer(text)
     } catch (error) {
       console.error(error)
-      setAnswer("⚠️ Something went wrong.")
+      setAnswer('⚠️ Something went wrong.')
     } finally {
       setLoading(false)
     }
@@ -46,6 +54,29 @@ function App() {
           className="w-full h-40 p-4 rounded-xl bg-white/10 backdrop-blur-md text-white placeholder-gray-300 border border-white/20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
 
+        {/* Checkboxes */}
+        <div className="flex gap-6 justify-center text-sm font-medium text-indigo-200">
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={addBullets}
+              onChange={() => setAddBullets(!addBullets)}
+              className="form-checkbox h-4 w-4 text-indigo-500"
+            />
+            <span>Bullet Points</span>
+          </label>
+          <label className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              checked={addHashtags}
+              onChange={() => setAddHashtags(!addHashtags)}
+              className="form-checkbox h-4 w-4 text-indigo-500"
+            />
+            <span>Add Hashtags</span>
+          </label>
+        </div>
+
+        {/* Button */}
         <div className="flex justify-center">
           <button
             onClick={generateTLDR}
@@ -56,6 +87,7 @@ function App() {
           </button>
         </div>
 
+        {/* Loading animation */}
         {loading && (
           <div className="flex justify-center items-center space-x-2 pt-2">
             <span className="text-indigo-300 text-sm">Thinking</span>
@@ -65,6 +97,7 @@ function App() {
           </div>
         )}
 
+        {/* Output */}
         {answer && (
           <div className="bg-white/5 p-6 rounded-xl border border-white/10 transition-all duration-500 animate-fade-in">
             <h2 className="text-xl font-semibold text-indigo-400 mb-2">Summary:</h2>
